@@ -1,6 +1,8 @@
 #!/usr/bin/env Rscript
 library(UniProt.ws)
-library(clusterProfiler)
+#library(clusterProfiler)
+library(argparse)
+
 setwd("/home/matthew/lab_root/pathway_jamb")
 
 
@@ -92,15 +94,28 @@ get_uniprot_ids <- function(gene_ids) {
 	# TODO: Investigate/remove terminal ';' in PFAMs
 	return (list(uniprot_ids=uniprot_ids, GOs=GOs, pfams=pfams))
 }
+main <- function(input_file, output_file, taxId) {
+	up <- UniProt.ws::UniProt.ws(taxId=39947)
+	input_file <- "./input.tsv"
+	input_table <- read.csv(input_file, header=TRUE, sep="\t")
+	names(input_table) <- c("GENE_NAMES", "MSU_ID", "RAP_ID", "UNIPROT_ID", "PFAM", "SUBCELLULAR", "TRANSMEMBRANE_DOMAIN","GO", "EC#", "References (PMID)", "Curator Name",	"Remark by Curator", "Associated Reaction", "Associated pathway")
+	gene_ids <- as.character(input_table$RAP_ID)
+	uniprot_results <- get_uniprot_ids(gene_ids)
+	input_table$UNIPROT_ID <- unlist(uniprot_results$uniprot_ids)
+	input_table$PFAM <- unlist(uniprot_results$pfams)
+	input_table$GO <- unlist(uniprot_results$GOs)
+	write.table(input_table, file='testoutput.tsv', quote=FALSE, sep='\t')
+}
 
-# TODO: We are writing GOs as a new column, but it should exist in the original CSV
-up <- UniProt.ws::UniProt.ws(taxId=39947)
-input_file <- "./input.tsv"
-input_table <- read.csv(input_file, header=TRUE, sep="\t")
-names(input_table) <- c("GENE_NAMES", "MSU_ID", "RAP_ID", "UNIPROT_ID", "PFAM", "SUBCELLULAR", "TRANSMEMBRANE_DOMAIN","GO", "EC#", "References (PMID)", "Curator Name",	"Remark by Curator", "Associated Reaction", "Associated pathway")
-gene_ids <- as.character(input_table$RAP_ID)
-uniprot_results <- get_uniprot_ids(gene_ids)
-input_table$UNIPROT_ID <- unlist(uniprot_results$uniprot_ids)
-input_table$PFAM <- unlist(uniprot_results$pfams)
-input_table$GO <- unlist(uniprot_results$GOs)
-write.table(input_table, file='testoutput.tsv', quote=FALSE, sep='\t')
+parser <- ArgumentParser()
+parser$add_argument("-i", "--input", type="character", dest="input", help="Input file to parse(TSV format)")
+parser$add_argument("-o", "--output", type="character", dest="output", help="Output file name")
+parser$add_argument("--taxId", type="integer", dest="taxID", default=39947, help="taxId(default 39947)")
+args <- parser$parse_args()
+if (is.null(args$input)) {
+	cat("Missing required input file arugment(specify with -i or --input)\n")
+} else if (is.null(args$output)) {
+	cat("Missing output file argument(specify with -o or --output)\n")
+} else {
+	main(args$input, args$output, args$taxID)
+}
