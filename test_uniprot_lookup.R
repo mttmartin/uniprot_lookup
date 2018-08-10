@@ -95,8 +95,7 @@ get_uniprot_ids <- function(gene_ids) {
 	return (list(uniprot_ids=uniprot_ids, GOs=GOs, pfams=pfams))
 }
 main <- function(input_file, output_file, taxId) {
-	up <- UniProt.ws::UniProt.ws(taxId=39947)
-	input_file <- "./input.tsv"
+	up <- UniProt.ws::UniProt.ws(taxId=taxId)
 	input_table <- read.csv(input_file, header=TRUE, sep="\t")
 	names(input_table) <- c("GENE_NAMES", "MSU_ID", "RAP_ID", "UNIPROT_ID", "PFAM", "SUBCELLULAR", "TRANSMEMBRANE_DOMAIN","GO", "EC#", "References (PMID)", "Curator Name",	"Remark by Curator", "Associated Reaction", "Associated pathway")
 	gene_ids <- as.character(input_table$RAP_ID)
@@ -104,7 +103,7 @@ main <- function(input_file, output_file, taxId) {
 	input_table$UNIPROT_ID <- unlist(uniprot_results$uniprot_ids)
 	input_table$PFAM <- unlist(uniprot_results$pfams)
 	input_table$GO <- unlist(uniprot_results$GOs)
-	write.table(input_table, file='testoutput.tsv', quote=FALSE, sep='\t')
+	write.table(input_table, file=output_file, quote=FALSE, sep='\t')
 }
 
 parser <- ArgumentParser()
