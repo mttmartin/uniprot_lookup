@@ -1,10 +1,9 @@
 #!/usr/bin/env Rscript
 library(UniProt.ws)
-#library(clusterProfiler)
+library(clusterProfiler)
 library(argparse)
 
 setwd("/home/matthew/lab_root/pathway_jamb")
-
 
 # Single lookup (meant for collecting results for amigious gene IDs e.g. multiple IDs)
 lookup_gene <- function(gene_id) {
@@ -41,7 +40,7 @@ clean_results <- function(results) {
 	return(results)
 }
 
-get_uniprot_ids <- function(gene_ids) {
+get_uniprot_ids <- function(gene_ids, up) {
 	uniprot_ids <- list()
 	GOs <- list()
 	pfams <- list()
@@ -60,6 +59,7 @@ get_uniprot_ids <- function(gene_ids) {
 				results <- select(up, keys=gene_ids[[i]], columns=c("UNIPROTKB", "DATABASE(PFAM)", "GO-ID", "SCORE"), keytype="ENSEMBL_GENOMES")
 			},
 			error = function(cond) {
+				print(paste("Error accessing Uniprot database: ", cond))
 				return(NULL)
 			}
 		)
@@ -97,13 +97,13 @@ get_uniprot_ids <- function(gene_ids) {
 main <- function(input_file, output_file, taxId) {
 	up <- UniProt.ws::UniProt.ws(taxId=taxId)
 	input_table <- read.csv(input_file, header=TRUE, sep="\t")
-	names(input_table) <- c("GENE_NAMES", "MSU_ID", "RAP_ID", "UNIPROT_ID", "PFAM", "SUBCELLULAR", "TRANSMEMBRANE_DOMAIN","GO", "EC#", "References (PMID)", "Curator Name",	"Remark by Curator", "Associated Reaction", "Associated pathway")
-	gene_ids <- as.character(input_table$RAP_ID)
-	uniprot_results <- get_uniprot_ids(gene_ids)
-	input_table$UNIPROT_ID <- unlist(uniprot_results$uniprot_ids)
-	input_table$PFAM <- unlist(uniprot_results$pfams)
+	#names(input_table) <- c("GENE_NAMES", "MSU_ID", "RAP_ID", "UNIPROT_ID", "PFAM", "SUBCELLULAR", "TRANSMEMBRANE_DOMAIN","GO", "EC#", "References (PMID)", "Curator Name",	"Remark by Curator", "Associated Reaction", "Associated pathway")
+	gene_ids <- as.character(input_table$RAP_geneID)
+	uniprot_results <- get_uniprot_ids(gene_ids, up)
+	input_table$Uniprot_ID <- unlist(uniprot_results$uniprot_ids)
+	input_table$Pfam_domain <- unlist(uniprot_results$pfams)
 	input_table$GO <- unlist(uniprot_results$GOs)
-	write.table(input_table, file=output_file, quote=FALSE, sep='\t')
+	write.table(input_table, file=output_file, quote=FALSE, sep='\t', row.names=FALSE)
 }
 
 parser <- ArgumentParser()
